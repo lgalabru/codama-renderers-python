@@ -1,0 +1,73 @@
+name: Main
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  # Among other things, opts out of Turborepo telemetry. See https://consoledonottrack.com/.
+  DO_NOT_TRACK: '1'
+  NODE_VERSION: 20
+
+jobs:
+  test:
+    name: Build & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build JS and types
+        run: pnpm build
+
+      - name: Run unit tests
+        run: pnpm test:unit
+
+  e2e:
+    name: E2E (generated Python)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Check out the conformance corpus as a sibling directory
+        run: git clone --depth 1 https://github.com/lgalabru/codama-conformance.git "$GITHUB_WORKSPACE/../conformance"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build JS and types
+        run: pnpm build
+
+      - name: Generate clients and run the e2e suite
+        run: pnpm test:e2e

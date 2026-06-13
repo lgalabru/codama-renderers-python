@@ -1,0 +1,43 @@
+{% extends "layout.njk" %}
+{% block main %}
+
+import typing
+
+from .shared.errors import ProgramError
+
+__all__ = [
+{% for name in exports %}
+    "{{ name }}",
+{% endfor %}
+]
+
+{% for error in errors %}
+{% if error.docs and error.docs.length %}
+{{ error.docs | pyComment }}
+{% endif %}
+{{ error.constName }} = {{ error.code }}
+{% endfor %}
+
+{{ dictName }}: typing.Dict[int, str] = {
+{% for error in errors %}
+    {{ error.code }}: {{ error.messagePy }},
+{% endfor %}
+}
+
+
+class {{ errorClassName }}(ProgramError):
+    """An error returned by the {{ programName }} program, carrying its numeric code."""
+
+
+def {{ functionName }}(code: int) -> typing.Optional[str]:
+    """Returns the error message for the given error code, if known."""
+    return {{ dictName }}.get(code)
+
+
+def {{ errorLookupFunctionName }}(code: int) -> typing.Optional[{{ errorClassName }}]:
+    """Returns a typed `{{ errorClassName }}` for the given error code, if known."""
+    message = {{ dictName }}.get(code)
+    if message is None:
+        return None
+    return {{ errorClassName }}(code, message)
+{% endblock %}

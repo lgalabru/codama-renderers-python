@@ -1,0 +1,8 @@
+node_modules
+dist
+__pycache__
+e2e/*/generated
+coverage
+.coverage
+.coverage.*
+.ruff_cache

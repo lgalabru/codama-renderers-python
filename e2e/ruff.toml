@@ -1,0 +1,10 @@
+# Ruff configuration for the generated e2e fixtures and the smoke test.
+#
+# The generated clients target Python 3.9 (stdlib only). This config is
+# discovered automatically both when `renderVisitor` formats freshly
+# generated code and when `e2e/test.sh` lints it, so the two always agree.
+target-version = "py39"
+
+[lint]
+# Ruff defaults (E4, E7, E9, F) plus import sorting (I).
+extend-select = ["I"]

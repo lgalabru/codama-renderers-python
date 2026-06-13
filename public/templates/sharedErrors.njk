@@ -1,0 +1,36 @@
+{% extends "layout.njk" %}
+{% block main %}
+
+__all__ = [
+    "CodamaError",
+    "PdaError",
+    "ProgramError",
+    "PubkeyError",
+    "SerializationError",
+]
+
+
+class CodamaError(Exception):
+    """Base class for every error raised by this generated client."""
+
+
+class SerializationError(CodamaError, ValueError):
+    """Raised when Borsh (de)serialization fails or input data is malformed."""
+
+
+class PubkeyError(SerializationError):
+    """Raised when a public key cannot be parsed or constructed."""
+
+
+class PdaError(CodamaError, ValueError):
+    """Raised when a program derived address cannot be derived."""
+
+
+class ProgramError(CodamaError):
+    """An error returned by an on-chain program, carrying its numeric code."""
+
+    def __init__(self, code: int, message: str) -> None:
+        super().__init__("[%d] %s" % (code, message))
+        self.code = code
+        self.message = message
+{% endblock %}
