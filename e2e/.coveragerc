@@ -1,0 +1,14 @@
+# Coverage.py configuration for the generated-Python coverage check
+# (used by e2e/test.sh; run from the package root).
+
+[paths]
+# Every generated package ships a byte-identical copy of the static shared/
+# runtime templates. Merge the four copies so the runtime is measured once
+# (as the union of what the smoke test, the conformance runner and the
+# runtime tests exercise), instead of diluting the number with three
+# partially-exercised duplicates.
+shared_runtime =
+    e2e/system/generated/shared
+    e2e/dummy/generated/shared
+    e2e/memo/generated/shared
+    e2e/pump-fun/generated/shared

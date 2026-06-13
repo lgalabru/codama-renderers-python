@@ -1,0 +1,16 @@
+{% extends "layout.njk" %}
+{% block main %}
+
+from .shared.pubkey import Pubkey
+
+__all__ = [
+{% for name in exports %}
+    "{{ name }}",
+{% endfor %}
+]
+
+{% for program in programs %}
+{{ program.nameConst }} = "{{ program.name }}"
+{{ program.idConst }} = Pubkey.from_base58("{{ program.publicKey }}")
+{% endfor %}
+{% endblock %}

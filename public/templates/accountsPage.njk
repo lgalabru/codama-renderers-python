@@ -1,0 +1,40 @@
+{% extends "layout.njk" %}
+{% block main %}
+
+{{ imports }}
+
+__all__ = [
+{% for name in exports %}
+    "{{ name }}",
+{% endfor %}
+]
+
+{% if docs and docs.length %}
+{{ docs | pyComment }}
+{% endif %}
+{% if discriminatorConstants %}
+{{ discriminatorConstants }}
+
+
+{% endif %}
+{{ body }}
+{% if sizeConst %}
+
+
+{{ sizeConst }}
+{% endif %}
+{% if pda %}
+
+
+def {{ pda.functionName }}(
+{% for param in pda.params %}
+    {{ param.name }}: {{ param.annotation }},
+{% endfor %}
+) -> typing.Tuple[Pubkey, int]:
+    seeds: typing.List[bytes] = []
+{% for expr in pda.seedExprs %}
+    seeds.append({{ expr }})
+{% endfor %}
+    return find_program_address(seeds, {{ programIdConst }})
+{% endif %}
+{% endblock %}

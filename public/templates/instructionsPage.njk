@@ -1,0 +1,59 @@
+{% extends "layout.njk" %}
+{% block main %}
+
+{{ imports }}
+
+__all__ = [
+{% for name in exports %}
+    "{{ name }}",
+{% endfor %}
+]
+
+{% if discriminatorConstants %}
+{{ discriminatorConstants }}
+
+
+{% endif %}
+{{ dataClass }}
+
+
+{% if docs and docs.length %}
+{{ docs | pyComment }}
+{% endif %}
+def {{ functionName }}(
+{% for param in params %}
+    {{ param.name }}: {{ param.annotation }}{% if param.default %} = {{ param.default }}{% endif %},
+{% endfor %}
+) -> Instruction:
+{% for res in accountResolutions %}
+    if {{ res.param }} is None:
+        {{ res.param }} = {{ res.defaultExpr }}
+{% endfor %}
+{% for res in argResolutions %}
+    if {{ res.param }} is None:
+        {{ res.param }} = {{ res.default }}
+{% endfor %}
+    accounts: typing.List[AccountMeta] = []
+{% for meta in accountMetas %}
+{% if meta.optional and meta.strategy == 'omitted' %}
+    if {{ meta.param }} is not None:
+        accounts.append(AccountMeta(pubkey={{ meta.param }}, is_signer={{ meta.isSignerPy }}, is_writable={{ meta.isWritablePy }}))
+{% elif meta.optional %}
+    accounts.append(
+        AccountMeta(
+            pubkey={{ meta.param }} if {{ meta.param }} is not None else {{ programIdConst }},
+            is_signer={{ meta.isSignerPy }} and {{ meta.param }} is not None,
+            is_writable={{ meta.isWritablePy }},
+        )
+    )
+{% else %}
+    accounts.append(AccountMeta(pubkey={{ meta.param }}, is_signer={{ meta.isSignerPy }}, is_writable={{ meta.isWritablePy }}))
+{% endif %}
+{% endfor %}
+{% if hasRemainingAccounts %}
+    if remaining_accounts is not None:
+        accounts.extend(remaining_accounts)
+{% endif %}
+    data = {{ dataClassName }}({% for f in argFields %}{{ f.fieldName }}={{ f.param }}{% if not loop.last %}, {% endif %}{% endfor %}).serialize()
+    return Instruction(program_id={{ programIdConst }}, accounts=accounts, data=data)
+{% endblock %}

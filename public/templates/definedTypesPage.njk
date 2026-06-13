@@ -1,0 +1,16 @@
+{% extends "layout.njk" %}
+{% block main %}
+
+{{ imports }}
+
+__all__ = [
+{% for name in exports %}
+    "{{ name }}",
+{% endfor %}
+]
+
+{% if docs and docs.length %}
+{{ docs | pyComment }}
+{% endif %}
+{{ body }}
+{% endblock %}
