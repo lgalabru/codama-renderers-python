@@ -41,7 +41,7 @@
         "nunjucks": "^3.2.4"
     },
     "devDependencies": {
-        "@types/node": "^25.2.3",
+        "@types/node": "^26.0.0",
         "@types/nunjucks": "^3.2.6",
         "@vitest/coverage-v8": "^4.1.8",
         "rimraf": "6.1.2",
