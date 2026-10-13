@@ -323,6 +323,27 @@ export function getTypeManifestVisitor(options: {
                     if (!sizeInfo || sizeInfo.py !== 'int' || sizeNode.endian !== 'le') {
                         throw new Error(`Enum size not supported: ${sizeNode.format}`);
                     }
+                    // Codama preserves explicit tags; omitted tags use their array
+                    // index, not the preceding variant's discriminator plus one.
+                    const discriminators = enumType.variants.map((variant, index) => variant.discriminator ?? index);
+                    const signed = sizeNode.format.startsWith('i');
+                    const bits = BigInt(sizeInfo.width * 8);
+                    const minimum = signed ? -(1n << (bits - 1n)) : 0n;
+                    const maximum = (1n << (bits - (signed ? 1n : 0n))) - 1n;
+                    const seen = new Set<number>();
+                    for (const discriminator of discriminators) {
+                        if (
+                            !Number.isSafeInteger(discriminator) ||
+                            BigInt(discriminator) < minimum ||
+                            BigInt(discriminator) > maximum
+                        ) {
+                            throw new Error(`Enum discriminator out of range for ${sizeNode.format}: ${discriminator}`);
+                        }
+                        if (seen.has(discriminator)) {
+                            throw new Error(`Duplicate enum discriminator: ${discriminator}`);
+                        }
+                        seen.add(discriminator);
+                    }
                     const imports = new ImportMap().add('~shared', 'borsh as _borsh').add('~shared.borsh', 'Reader');
                     const exports: string[] = [typeName];
                     const base = {
@@ -335,7 +356,7 @@ export function getTypeManifestVisitor(options: {
                         imports.add('enum', 'IntEnum').add('~shared.errors', 'SerializationError');
                         const lines: string[] = [`class ${typeName}(IntEnum):`];
                         enumType.variants.forEach((variant, index) => {
-                            lines.push(`    ${snakeCase(variant.name).toUpperCase()} = ${index}`);
+                            lines.push(`    ${snakeCase(variant.name).toUpperCase()} = ${discriminators[index]}`);
                         });
                         lines.push('');
                         lines.push('    def serialize(self) -> bytes:');
@@ -366,7 +387,7 @@ export function getTypeManifestVisitor(options: {
                     enumType.variants.forEach((variant, index) => {
                         const variantClass = typeName + pascalCase(variant.name);
                         exports.push(variantClass);
-                        dispatchLines.push(`        if _index == ${index}:`);
+                        dispatchLines.push(`        if _index == ${discriminators[index]}:`);
                         dispatchLines.push(`            return ${variantClass}._deserialize_fields(r)`);
 
                         let fields: StructField[] = [];
@@ -408,7 +429,7 @@ export function getTypeManifestVisitor(options: {
                                 className: variantClass,
                                 docs: [],
                                 fields,
-                                serializePrelude: `_borsh.write_${sizeInfo.fn}(${index})`,
+                                serializePrelude: `_borsh.write_${sizeInfo.fn}(${discriminators[index]})`,
                                 variant: true,
                             }),
                         );

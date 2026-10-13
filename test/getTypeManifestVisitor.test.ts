@@ -5,6 +5,9 @@ import {
     bytesTypeNode,
     definedTypeLinkNode,
     definedTypeNode,
+    enumEmptyVariantTypeNode,
+    enumStructVariantTypeNode,
+    enumTupleVariantTypeNode,
     enumTypeNode,
     fixedCountNode,
     fixedSizeTypeNode,
@@ -178,6 +181,63 @@ describe('getTypeManifestVisitor', () => {
         expect(scalar.type).toContain('class State(IntEnum):');
         expect(scalar.type).toContain('except ValueError as exc:');
         expect(scalar.type).toContain('raise SerializationError("unknown variant index for State: %d" % _value)');
+    });
+
+    test('preserves sparse scalar discriminators and index defaults', () => {
+        const scalar = manifest(
+            enumTypeNode([
+                enumEmptyVariantTypeNode('high', 19),
+                enumEmptyVariantTypeNode('low', 4),
+                enumEmptyVariantTypeNode('implicit'),
+                enumEmptyVariantTypeNode('zero', 0),
+            ]),
+        );
+        expect(scalar.type).toContain('HIGH = 19');
+        expect(scalar.type).toContain('LOW = 4');
+        expect(scalar.type).toContain('IMPLICIT = 2');
+        expect(scalar.type).toContain('ZERO = 0');
+    });
+
+    test('uses the same sparse tags for every data variant encoder and decoder', () => {
+        const tagged = manifest(
+            enumTypeNode([
+                enumStructVariantTypeNode(
+                    'record',
+                    structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u16') })]),
+                    19,
+                ),
+                enumTupleVariantTypeNode('tuple', tupleTypeNode([numberTypeNode('u8')]), 4),
+                enumEmptyVariantTypeNode('empty', 9),
+                enumEmptyVariantTypeNode('implicit'),
+            ]),
+        );
+        for (const tag of [19, 4, 9, 3]) {
+            expect(tagged.type).toContain(`if _index == ${tag}:`);
+            expect(tagged.type).toContain(`_borsh.write_u8(${tag})`);
+        }
+    });
+
+    test.each([-1, 256, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
+        'rejects invalid u8 discriminator %s before generating Python',
+        discriminator => {
+            expect(() => manifest(enumTypeNode([enumEmptyVariantTypeNode('bad', discriminator)]))).toThrow(
+                'Enum discriminator out of range',
+            );
+        },
+    );
+
+    test('rejects explicit and implicit discriminator collisions', () => {
+        expect(() =>
+            manifest(enumTypeNode([enumEmptyVariantTypeNode('first', 1), enumEmptyVariantTypeNode('second')])),
+        ).toThrow('Duplicate enum discriminator: 1');
+        expect(() =>
+            manifest(
+                enumTypeNode([
+                    enumTupleVariantTypeNode('first', tupleTypeNode([]), 7),
+                    enumEmptyVariantTypeNode('second', 7),
+                ]),
+            ),
+        ).toThrow('Duplicate enum discriminator: 7');
     });
 
     test('renders struct fields with omitted defaults', () => {
