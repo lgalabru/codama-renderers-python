@@ -135,7 +135,59 @@
                 "arguments": []
             }
         ],
-        "definedTypes": [],
+        "definedTypes": [
+            {
+                "kind": "definedTypeNode",
+                "name": "sparseScalar",
+                "docs": [],
+                "type": {
+                    "kind": "enumTypeNode",
+                    "size": { "kind": "numberTypeNode", "format": "u8", "endian": "le" },
+                    "variants": [
+                        { "kind": "enumEmptyVariantTypeNode", "name": "high", "discriminator": 19 },
+                        { "kind": "enumEmptyVariantTypeNode", "name": "low", "discriminator": 4 },
+                        { "kind": "enumEmptyVariantTypeNode", "name": "implicit" },
+                        { "kind": "enumEmptyVariantTypeNode", "name": "zero", "discriminator": 0 }
+                    ]
+                }
+            },
+            {
+                "kind": "definedTypeNode",
+                "name": "sparseTagged",
+                "docs": [],
+                "type": {
+                    "kind": "enumTypeNode",
+                    "size": { "kind": "numberTypeNode", "format": "u8", "endian": "le" },
+                    "variants": [
+                        {
+                            "kind": "enumStructVariantTypeNode",
+                            "name": "record",
+                            "discriminator": 19,
+                            "struct": {
+                                "kind": "structTypeNode",
+                                "fields": [{
+                                    "kind": "structFieldTypeNode",
+                                    "name": "value",
+                                    "docs": [],
+                                    "type": { "kind": "numberTypeNode", "format": "u16", "endian": "le" }
+                                }]
+                            }
+                        },
+                        {
+                            "kind": "enumTupleVariantTypeNode",
+                            "name": "tuple",
+                            "discriminator": 4,
+                            "tuple": {
+                                "kind": "tupleTypeNode",
+                                "items": [{ "kind": "numberTypeNode", "format": "u8", "endian": "le" }]
+                            }
+                        },
+                        { "kind": "enumEmptyVariantTypeNode", "name": "empty", "discriminator": 9 },
+                        { "kind": "enumEmptyVariantTypeNode", "name": "implicit" }
+                    ]
+                }
+            }
+        ],
         "errors": [],
         "name": "dummy",
         "prefix": "",

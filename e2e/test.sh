@@ -13,8 +13,9 @@ test_project pump-fun
 
 # The generated clients (and the e2e test scripts) must be lint-clean and
 # formatted. Configuration lives in e2e/ruff.toml (target-version py39).
-uvx ruff check e2e
-uvx ruff format --check e2e
+# Fixtures are gitignored, but must still be checked.
+uvx ruff check --no-respect-gitignore e2e
+uvx ruff format --check --no-respect-gitignore e2e
 
 # Locate coverage.py (optional): prefer uvx, fall back to a local install.
 # When it is missing, the tests still run but coverage is skipped.
@@ -43,6 +44,7 @@ function run_py() {
 run_py e2e/smoke_test.py
 run_py e2e/conformance_runner.py
 run_py e2e/runtime_test.py
+run_py e2e/enum_test.py
 
 if [ -n "$COVERAGE" ]; then
     $COVERAGE combine --rcfile=e2e/.coveragerc
